@@ -94,15 +94,97 @@ Kubernetes 통합 관리 플랫폼입니다.
 
 ## 7. 🏗️ 아키텍처
 
-### 시스템 아키텍처
+### VMware 기반 시스템 아키텍처
 
 <image src = "https://github.com/solra-org/.github/blob/main/images/%EC%8B%9C%EC%8A%A4%ED%85%9C%20%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98.png?raw=true" width = 500>
 
-<image src = "https://github.com/solra-org/.github/blob/main/images/vm%20%EC%84%A4%EA%B3%84%ED%91%9C.png?raw=true">
+### 📦 **VMware 구성 요약**
+
+- **VMware ESXi**
+  - 물리 서버에서 직접 실행되는 하이퍼바이저
+  - VM(가상머신)들을 호스팅
+- **VMware vCenter Server**
+  - 여러 ESXi 서버와 VM을 중앙 관리
+  - VM 배포, 리소스 할당, 모니터링, 마이그레이션 등을 관리
+- **VMware vSphere Client**
+  - 관리자/운영자가 접속해 VM과 vCenter 관리
+
+---
+
+### 🗄️ **VM 설계표**
+
+| 역할                             | 구성 내용                                               |
+| -------------------------------- | ------------------------------------------------------- |
+| **HAProxy** (lb-node)            | 2vCPU, 2GB RAM, 100GB Disk, IP 10.5.100.10              |
+| **Control Plane** (master-1/2/3) | 각 2vCPU, 4GB RAM, 100GB Disk, IP 10.5.100.11~13        |
+| **Worker Node** (worker-1/2/3)   | 각 4vCPU, 8GB RAM, 100GB Disk, IP 10.5.100.21~23        |
+| **Gitlab**                       | 4vCPU, 8GB RAM, 100GB Disk, IP 10.5.100.30              |
+| **Database Master/Slave**        | 각 4vCPU, 8GB RAM, 200GB Disk, IP 10.5.100.41/42        |
+| **NAT Server**                   | 2vCPU, 4GB RAM, 50GB Disk, IP 10.0.100.14, 192.168.0.24 |
+| **DNS Server**                   | 2vCPU, 4GB RAM, 30GB Disk, IP 10.0.100.11               |
 
 ### 서비스 아키텍처
 
 <image src = "https://github.com/solra-org/.github/blob/main/images/%EC%84%9C%EB%B9%84%EC%8A%A4%20%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98.png?raw=true">
+
+🧑‍💻 **Developer (개발자)**
+
+- GitLab Server에 git commit & push로 코드 푸시
+- GitLab에서 CI/CD 파이프라인(Webhook) 자동 트리거
+
+🛠 **GitLab Server**
+
+- CI/CD 파이프라인: Jenkins Master + Agents로 빌드/배포
+- Manifest 관리: Kubernetes 리소스 매니페스트 업데이트 및 GitOps 리포로 커밋
+
+⚙️ **CI/CD (Jenkins)**
+
+- Master → Agents에게 작업 분배
+- 최종적으로 Docker 이미지 빌드 후 harbor로 Push
+
+📦 **Solra-harbor (Harbor)**
+
+- GitLab CI/CD에서 빌드한 Docker 이미지 저장소
+- Argo CD가 Pull하여 Kubernetes에 배포
+
+🚀 **Argo CD**
+
+- GitOps 방식으로 manifest, 이미지 pull
+- Kubernetes 클러스터 내 애플리케이션 자동 배포 및 동기화 관리
+
+🌐 **Ingress Controller**
+
+- 외부에서 들어오는 트래픽을 서비스별로 라우팅 (예: NGINX Ingress)
+
+💥 **Kube-monkey**
+
+- Chaos Engineering 툴
+- → 무작위로 Pod를 종료하여 클러스터의 복원력 테스트
+
+📊 **Monitoring Stack**
+
+- Grafana: 시각화 대시보드
+- Prometheus: 메트릭 수집
+- Alertmanager: 경보/알림
+- Loki: 로그 수집/검색
+
+🧩 **Solra 플랫폼 구성**
+
+- Vite: 프론트엔드 빌드 툴 (React/JS 등)
+- Spring Boot: 백엔드 API 서버
+- Redis: 캐시/세션 관리 (master-slave 구성)
+
+💾 **RDBMS**
+
+- MySQL master-slave 구조로 데이터 저장
+
+🛡 **WireGuard VPN Server**
+
+- 사내/외부 접속 시 안전한 VPN 터널 제공
+
+🖥️ **Lb Server (HAProxy)**
+
+- 로드 밸런싱, L7 트래픽 관리
 
 ---
 

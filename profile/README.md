@@ -189,6 +189,8 @@ Kubernetes 통합 관리 플랫폼입니다.
 ---
 
 ## 8. 📁 프로젝트 구성
+### SOLRA 문서 Repository
+https://github.com/solra-org/solra-docs
 
 ```
 /backend # Spring Boot API 서버
